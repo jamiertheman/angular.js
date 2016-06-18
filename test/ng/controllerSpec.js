@@ -27,6 +27,18 @@ describe('$controller', function() {
       expect(ctrl instanceof FooCtrl).toBe(true);
     });
 
+    it('should allow registration of bound controller functions', function() {
+      var FooCtrl = function($scope) { $scope.foo = 'bar'; },
+        scope = {},
+        ctrl;
+
+      var BoundFooCtrl = FooCtrl.bind(null);
+
+      $controllerProvider.register('FooCtrl', ['$scope', BoundFooCtrl]);
+      ctrl = $controller('FooCtrl', {$scope: scope});
+
+      expect(scope.foo).toBe('bar');
+    });
 
     it('should allow registration of map of controllers', function() {
       var FooCtrl = function($scope) { $scope.foo = 'foo'; },
@@ -34,7 +46,7 @@ describe('$controller', function() {
           scope = {},
           ctrl;
 
-      $controllerProvider.register({FooCtrl: FooCtrl, BarCtrl: BarCtrl} );
+      $controllerProvider.register({FooCtrl: FooCtrl, BarCtrl: BarCtrl});
 
       ctrl = $controller('FooCtrl', {$scope: scope});
       expect(scope.foo).toBe('foo');
@@ -59,10 +71,27 @@ describe('$controller', function() {
     });
 
 
-    it('should throw an exception if a controller is called "hasOwnProperty"', function () {
+    it('should throw an exception if a controller is called "hasOwnProperty"', function() {
       expect(function() {
         $controllerProvider.register('hasOwnProperty', function($scope) {});
       }).toThrowMinErr('ng', 'badname', "hasOwnProperty is not a valid controller name");
+    });
+
+
+    it('should allow checking the availability of a controller', function() {
+      $controllerProvider.register('FooCtrl', noop);
+      $controllerProvider.register('BarCtrl', ['dep1', 'dep2', noop]);
+      $controllerProvider.register({
+        'BazCtrl': noop,
+        'QuxCtrl': ['dep1', 'dep2', noop]
+      });
+
+      expect($controllerProvider.has('FooCtrl')).toBe(true);
+      expect($controllerProvider.has('BarCtrl')).toBe(true);
+      expect($controllerProvider.has('BazCtrl')).toBe(true);
+      expect($controllerProvider.has('QuxCtrl')).toBe(true);
+
+      expect($controllerProvider.has('UnknownCtrl')).toBe(false);
     });
 
 
@@ -78,7 +107,16 @@ describe('$controller', function() {
         var foo = $controller('a.Foo', {$scope: scope});
         expect(foo).toBeDefined();
         expect(foo instanceof Foo).toBe(true);
-      }));
+    }));
+
+
+    it('should throw ctrlfmt if name contains spaces', function() {
+      expect(function() {
+        $controller('ctrl doom');
+      }).toThrowMinErr("$controller", "ctrlfmt",
+                       "Badly formed controller string 'ctrl doom'. " +
+                       "Must match `__name__ as __id__` or `__name__`.");
+    });
   });
 
 
@@ -118,7 +156,7 @@ describe('$controller', function() {
 
     $window.a = {Foo: Foo};
 
-    expect(function () {
+    expect(function() {
       $controller('a.Foo', {$scope: scope});
     }).toThrow();
   }));
@@ -155,6 +193,49 @@ describe('$controller', function() {
         $controller('a.b.FooCtrl as foo');
       }).toThrowMinErr("$controller", "noscp", "Cannot export controller 'a.b.FooCtrl' as 'foo'! No $scope object provided via `locals`.");
 
+    });
+
+
+    it('should throw ctrlfmt if identifier contains non-ident characters', function() {
+      expect(function() {
+        $controller('ctrl as foo<bar');
+      }).toThrowMinErr("$controller", "ctrlfmt",
+                       "Badly formed controller string 'ctrl as foo<bar'. " +
+                       "Must match `__name__ as __id__` or `__name__`.");
+    });
+
+
+    it('should throw ctrlfmt if identifier contains spaces', function() {
+      expect(function() {
+        $controller('ctrl as foo bar');
+      }).toThrowMinErr("$controller", "ctrlfmt",
+                       "Badly formed controller string 'ctrl as foo bar'. " +
+                       "Must match `__name__ as __id__` or `__name__`.");
+    });
+
+
+    it('should throw ctrlfmt if identifier missing after " as "', function() {
+      expect(function() {
+        $controller('ctrl as ');
+      }).toThrowMinErr("$controller", "ctrlfmt",
+                       "Badly formed controller string 'ctrl as '. " +
+                       "Must match `__name__ as __id__` or `__name__`.");
+      expect(function() {
+        $controller('ctrl as');
+      }).toThrowMinErr("$controller", "ctrlfmt",
+                       "Badly formed controller string 'ctrl as'. " +
+                       "Must match `__name__ as __id__` or `__name__`.");
+    });
+
+
+    it('should allow identifiers containing `$`', function() {
+      var scope = {};
+
+      $controllerProvider.register('FooCtrl', function() { this.mark = 'foo'; });
+
+      var foo = $controller('FooCtrl as $foo', {$scope: scope});
+      expect(scope.$foo).toBe(foo);
+      expect(scope.$foo.mark).toBe('foo');
     });
   });
 });

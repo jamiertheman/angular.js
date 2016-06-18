@@ -5,9 +5,9 @@
 
 # What does it do?
 
-The `$location` service parses the URL in the browser address bar (based on the [window.location](https://developer.mozilla.org/en/window.location)) and makes the URL available to
-your application. Changes to the URL in the address bar are reflected into $location service and
-changes to $location are reflected into the browser address bar.
+The `$location` service parses the URL in the browser address bar (based on [`window.location`](https://developer.mozilla.org/en/window.location)) and makes the URL available to
+your application. Changes to the URL in the address bar are reflected into the `$location` service and
+changes to `$location` are reflected into the browser address bar.
 
 **The $location service:**
 
@@ -21,7 +21,7 @@ changes to $location are reflected into the browser address bar.
 - Represents the URL object as a set of methods (protocol, host, port, path, search, hash).
 
 
-## Comparing $location to window.location
+## Comparing `$location` to `window.location`
 
 <table class="table">
 <thead>
@@ -68,7 +68,7 @@ changes to $location are reflected into the browser address bar.
 </tbody>
 </table>
 
-## When should I use $location?
+## When should I use `$location`?
 Any time your application needs to react to a change in the current URL or if you want to change
 the current URL in the browser.
 
@@ -85,24 +85,25 @@ others customizing the configuration can enable new features.
 Once the `$location` service is instantiated, you can interact with it via jQuery-style getter and
 setter methods that allow you to get or change the current URL in the browser.
 
-## $location service configuration
+## `$location` service configuration
 
 To configure the `$location` service, retrieve the
 {@link ng.$locationProvider $locationProvider} and set the parameters as follows:
 
 
-- **html5Mode(mode)**: {boolean}<br />
-  `true` - see HTML5 mode<br />
-  `false` - see Hashbang mode<br />
-  default: `false`
+- **html5Mode(mode)**: {boolean|Object}<br />
+  `true` or `enabled:true` - see HTML5 mode<br />
+  `false` or `enabled:false` - see Hashbang mode<br />
+  `requireBase:true` - see Relative links<br />
+  default: `enabled:false`
 
 - **hashPrefix(prefix)**: {string}<br />
   prefix used for Hashbang URLs (used in Hashbang mode or in legacy browser in Html5 mode)<br />
-  default: `""`
+  default: `"!"`
 
 ### Example configuration
 ```js
-$locationProvider.html5Mode(true).hashPrefix('!');
+$locationProvider.html5Mode(true).hashPrefix('*');
 ```
 
 ## Getter and setter methods
@@ -164,7 +165,7 @@ encoded.
 
 `$location` service has two configuration modes which control the format of the URL in the browser
 address bar: **Hashbang mode** (the default) and the **HTML5 mode** which is based on using the
-HTML5 [History API](http://www.w3.org/TR/html5/history.html). Applications use the same API in
+[HTML5 History API](https://html.spec.whatwg.org/multipage/browsers.html#the-history-interface). Applications use the same API in
 both modes and the `$location` service will work with appropriate URL segments and browser APIs to
 facilitate the browser URL change and history management.
 
@@ -245,7 +246,7 @@ it('should show example', inject(
 ## HTML5 mode
 
 In HTML5 mode, the `$location` service getters and setters interact with the browser URL address
-through the HTML5 history API, which allows for use of regular URL path and search segments,
+through the HTML5 history API. This allows for use of regular URL path and search segments,
 instead of their hashbang equivalents. If the HTML5 History API is not supported by a browser, the
 `$location` service will fall back to using the hashbang URLs automatically. This frees you from
 having to worry about whether the browser displaying your app supports the history API  or not; the
@@ -300,7 +301,7 @@ it('should show example', inject(
 ### Fallback for legacy browsers
 
 For browsers that support the HTML5 history API, `$location` uses the HTML5 history API to write
-path and search. If the history API is not supported by a browser, `$location` supplies a Hasbang
+path and search. If the history API is not supported by a browser, `$location` supplies a Hashbang
 URL. This frees you from having to worry about whether the browser viewing your app supports the
 history API  or not; the `$location` service makes this transparent to you.
 
@@ -328,20 +329,37 @@ reload to the original link.
 
 ### Relative links
 
-Be sure to check all relative links, images, scripts etc. Angular requires you to specify the url base in
-the head of your main html file (`<base href="/my-base">`). With that, relative urls will
-always be resolved to this base url, event if the initial url of the document was different.
+Be sure to check all relative links, images, scripts etc. Angular requires you to specify the url
+base in the head of your main html file (`<base href="/my-base/index.html">`) unless `html5Mode.requireBase`
+is set to `false` in the html5Mode definition object passed to `$locationProvider.html5Mode()`. With
+that, relative urls will always be resolved to this base url, even if the initial url of the
+document was different.
 
 There is one exception: Links that only contain a hash fragment (e.g. `<a href="#target">`)
 will only change `$location.hash()` and not modify the url otherwise. This is useful for scrolling
 to anchors on the same page without needing to know on which page the user currently is.
+
 
 ### Server side
 
 Using this mode requires URL rewriting on server side, basically you have to rewrite all your links
 to entry point of your application (e.g. index.html). Requiring a `<base>` tag is also important for
 this case, as it allows Angular to differentiate between the part of the url that is the application
-base and the path that should be handeled by the application.
+base and the path that should be handled by the application.
+
+### Base href constraints
+
+The `$location` service is not able to function properly if the current URL is outside the URL given
+as the base href. This can have subtle confusing consequences...
+
+Consider a base href set as follows: `<base href="/base/">` (i.e. the application exists in the "folder"
+called `/base`). The URL `/base` is actually outside the application (it refers to the `base` file found
+in the root `/` folder).
+
+If you wish to be able to navigate to the application via a URL such as `/base` then you should ensure that
+you server is setup to redirect such requests to `/base/`.
+
+See https://github.com/angular/angular.js/issues/14018 for more information.
 
 ### Sending links among different browsers
 
@@ -353,15 +371,15 @@ legacy browsers and hashbang links in modern browser:
 
 ### Example
 
-Here you can see two `$location` instances, both in **Html5 mode**, but on different browsers, so
-that you can see the differences. These `$location` services are connected to a fake browsers. Each
-input represents address bar of the browser.
+Here you can see two `$location` instances that show the difference between **Html5 mode** and **Html5 Fallback mode**.
+Note that to simulate different levels of browser support, the `$location` instances are connected to
+a fakeBrowser service, which you don't have to set up in actual projects.
 
-Note that when you type hashbang url into first browser (or vice versa) it doesn't rewrite /
+Note that when you type hashbang url into the first browser (or vice versa) it doesn't rewrite /
 redirect to regular / hashbang url, as this conversion happens only during parsing the initial URL
 = on page reload.
 
-In these examples we use `<base href="/base/index.html" />`
+In these examples we use `<base href="/base/index.html" />`. The inputs represent the address bar of the browser.
 
 #### Browser in HTML5 mode
 <example module="html5-mode" name="location-html5-mode">
@@ -386,6 +404,7 @@ In these examples we use `<base href="/base/index.html" />`
   <file name="app.js">
    angular.module('html5-mode', ['fake-browser', 'address-bar'])
 
+   // Configure the fakeBrowser. Do not set these values in actual projects.
    .constant('initUrl', 'http://www.example.com/base/path?a=b#h')
    .constant('baseHref', '/base/index.html')
    .value('$sniffer', { history: true })
@@ -535,6 +554,7 @@ In these examples we use `<base href="/base/index.html" />`
   <file name="app.js">
     angular.module('hashbang-mode', ['fake-browser', 'address-bar'])
 
+    // Configure the fakeBrowser. Do not set these values in actual projects.
     .constant('initUrl', 'http://www.example.com/base/index.html#!/path?a=b#h')
     .constant('baseHref', '/base/index.html')
     .value('$sniffer', { history: false })
@@ -690,7 +710,7 @@ A path should always begin with forward slash (`/`); the `$location.path()` sett
 forward slash if it is missing.
 
 Note that the `!` prefix in the hashbang mode is not part of `$location.path()`; it is actually
-hashPrefix.
+`hashPrefix`.
 
 ## Crawling your app
 
@@ -766,8 +786,8 @@ then uses the information it obtains to compose hashbang URLs (such as
     </tr>
 
     <tr class="head">
-      <td>Navigation outside the app</td>
-      <td>Use lower level API</td>
+      <th>Navigation outside the app</td>
+      <th>Use lower level API</td>
     </tr>
 
     <tr>
@@ -781,8 +801,8 @@ then uses the information it obtains to compose hashbang URLs (such as
     </tr>
 
     <tr class="head">
-      <td>Read access</td>
-      <td>Change to</td>
+      <th>Read access</td>
+      <th>Change to</td>
     </tr>
 
     <tr>
@@ -832,7 +852,7 @@ angular.module('locationExample', [])
 
 # Related API
 
-* {@link ng.$location $location API}
+* {@link ng.$location `$location` API}
 
 
 

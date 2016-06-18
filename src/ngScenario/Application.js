@@ -34,8 +34,9 @@ angular.scenario.Application.prototype.getFrame_ = function() {
  */
 angular.scenario.Application.prototype.getWindow_ = function() {
   var contentWindow = this.getFrame_().prop('contentWindow');
-  if (!contentWindow)
+  if (!contentWindow) {
     throw 'Frame window is not accessible.';
+  }
   return contentWindow;
 };
 
@@ -63,23 +64,35 @@ angular.scenario.Application.prototype.navigateTo = function(url, loadFn, errorF
     self.context.find('#test-frames').append('<iframe>');
     frame = self.getFrame_();
 
-    frame.load(function() {
+    frame.on('load', function() {
       frame.off();
       try {
         var $window = self.getWindow_();
 
-        if ($window.angular) {
-          // Disable animations
-          $window.angular.resumeBootstrap([['$provide', function($provide) {
-            return ['$animate', function($animate) {
-              $animate.enabled(false);
-            }];
-          }]]);
+        if (!$window.angular) {
+          self.executeAction(loadFn);
+          return;
         }
 
-        self.executeAction(loadFn);
+        if (!$window.angular.resumeBootstrap) {
+          $window.angular.resumeDeferredBootstrap = resumeDeferredBootstrap;
+        } else {
+          resumeDeferredBootstrap();
+        }
+
       } catch (e) {
         errorFn(e);
+      }
+
+      function resumeDeferredBootstrap() {
+        // Disable animations
+        var $injector = $window.angular.resumeBootstrap([['$provide', function($provide) {
+          return ['$animate', function($animate) {
+            $animate.enabled(false);
+          }];
+        }]]);
+        self.rootElement = $injector.get('$rootElement')[0];
+        self.executeAction(loadFn);
       }
     }).attr('src', url);
 
@@ -105,7 +118,14 @@ angular.scenario.Application.prototype.executeAction = function(action) {
   if (!$window.angular) {
     return action.call(this, $window, _jQuery($window.document));
   }
-  angularInit($window.document, function(element) {
+
+  if (!!this.rootElement) {
+    executeWithElement(this.rootElement);
+  } else {
+    angularInit($window.document, angular.bind(this, executeWithElement));
+  }
+
+  function executeWithElement(element) {
     var $injector = $window.angular.element(element).injector();
     var $element = _jQuery(element);
 
@@ -113,10 +133,10 @@ angular.scenario.Application.prototype.executeAction = function(action) {
       return $injector;
     };
 
-    $injector.invoke(function($browser){
+    $injector.invoke(function($browser) {
       $browser.notifyWhenNoOutstandingRequests(function() {
         action.call(self, $window, $element);
       });
     });
-  });
+  }
 };

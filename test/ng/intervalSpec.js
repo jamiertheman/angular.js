@@ -3,7 +3,7 @@
 describe('$interval', function() {
   /* global $IntervalProvider: false */
 
-  beforeEach(module(function($provide){
+  beforeEach(module(function($provide) {
     var repeatFns = [],
         nextRepeatId = 0,
         now = 0,
@@ -17,7 +17,7 @@ describe('$interval', function() {
           fn: fn,
           id: nextRepeatId
         });
-        repeatFns.sort(function(a,b){ return a.nextTime - b.nextTime;});
+        repeatFns.sort(function(a, b) { return a.nextTime - b.nextTime;});
 
         return nextRepeatId++;
       },
@@ -29,7 +29,7 @@ describe('$interval', function() {
           if (fn.id === id) fnIndex = index;
         });
 
-        if (fnIndex !== undefined) {
+        if (isDefined(fnIndex)) {
           repeatFns.splice(fnIndex, 1);
           return true;
         }
@@ -43,7 +43,7 @@ describe('$interval', function() {
           var task = repeatFns[0];
           task.fn();
           task.nextTime += task.delay;
-          repeatFns.sort(function(a,b){ return a.nextTime - b.nextTime;});
+          repeatFns.sort(function(a, b) { return a.nextTime - b.nextTime;});
         }
         return millis;
       }
@@ -69,7 +69,7 @@ describe('$interval', function() {
 
   it('should call $apply after each task is executed',
       inject(function($interval, $rootScope, $window) {
-    var applySpy = spyOn($rootScope, '$apply').andCallThrough();
+    var applySpy = spyOn($rootScope, '$apply').and.callThrough();
 
     $interval(noop, 1000);
     expect(applySpy).not.toHaveBeenCalled();
@@ -77,18 +77,18 @@ describe('$interval', function() {
     $window.flush(1000);
     expect(applySpy).toHaveBeenCalledOnce();
 
-    applySpy.reset();
+    applySpy.calls.reset();
 
     $interval(noop, 1000);
     $interval(noop, 1000);
     $window.flush(1000);
-    expect(applySpy.callCount).toBe(3);
+    expect(applySpy).toHaveBeenCalledTimes(3);
   }));
 
 
   it('should NOT call $apply if invokeApply is set to false',
       inject(function($interval, $rootScope, $window) {
-    var applySpy = spyOn($rootScope, '$apply').andCallThrough();
+    var applySpy = spyOn($rootScope, '$apply').and.callThrough();
 
     $interval(noop, 1000, 0, false);
     expect(applySpy).not.toHaveBeenCalled();
@@ -100,8 +100,8 @@ describe('$interval', function() {
 
   it('should NOT call $evalAsync or $digest if invokeApply is set to false',
       inject(function($interval, $rootScope, $window, $timeout) {
-    var evalAsyncSpy = spyOn($rootScope, '$evalAsync').andCallThrough();
-    var digestSpy = spyOn($rootScope, '$digest').andCallThrough();
+    var evalAsyncSpy = spyOn($rootScope, '$evalAsync').and.callThrough();
+    var digestSpy = spyOn($rootScope, '$digest').and.callThrough();
     var notifySpy = jasmine.createSpy('notify');
 
     $interval(notifySpy, 1000, 1, false);
@@ -113,6 +113,35 @@ describe('$interval', function() {
     expect(evalAsyncSpy).not.toHaveBeenCalled();
     expect(digestSpy).not.toHaveBeenCalled();
   }));
+
+
+  it('should not depend on `notify` to trigger the callback call', function() {
+    module(function($provide) {
+      $provide.decorator('$q', function($delegate) {
+        function replacement() {}
+        replacement.defer = function() {
+          var result = $delegate.defer();
+          result.notify = noop;
+          return result;
+        };
+        return replacement;
+      });
+    });
+
+    inject(function($interval, $window) {
+      var counter = 0;
+      $interval(function() { counter++; }, 1000);
+
+      expect(counter).toBe(0);
+
+      $window.flush(1000);
+      expect(counter).toBe(1);
+
+      $window.flush(1000);
+
+      expect(counter).toBe(2);
+    });
+  });
 
 
   it('should allow you to specify the delay time', inject(function($interval, $window) {
@@ -139,6 +168,31 @@ describe('$interval', function() {
     expect(counter).toBe(2);
     $window.flush(1000);
     expect(counter).toBe(2);
+  }));
+
+
+  it('should allow you to specify a number of arguments', inject(function($interval, $window) {
+    var task1 = jasmine.createSpy('task1'),
+        task2 = jasmine.createSpy('task2'),
+        task3 = jasmine.createSpy('task3');
+    $interval(task1, 1000, 2, true, 'Task1');
+    $interval(task2, 1000, 2, true, 'Task2');
+    $interval(task3, 1000, 2, true, 'I', 'am', 'a', 'Task3', 'spy');
+
+    $window.flush(1000);
+    expect(task1).toHaveBeenCalledWith('Task1');
+    expect(task2).toHaveBeenCalledWith('Task2');
+    expect(task3).toHaveBeenCalledWith('I', 'am', 'a', 'Task3', 'spy');
+
+    task1.calls.reset();
+    task2.calls.reset();
+    task3.calls.reset();
+
+    $window.flush(1000);
+    expect(task1).toHaveBeenCalledWith('Task1');
+    expect(task2).toHaveBeenCalledWith('Task2');
+    expect(task3).toHaveBeenCalledWith('I', 'am', 'a', 'Task3', 'spy');
+
   }));
 
 
@@ -202,7 +256,7 @@ describe('$interval', function() {
 
     it('should call $apply even if an exception is thrown in callback', inject(
         function($interval, $rootScope, $window) {
-      var applySpy = spyOn($rootScope, '$apply').andCallThrough();
+      var applySpy = spyOn($rootScope, '$apply').and.callThrough();
 
       $interval(function() { throw "Test Error"; }, 1000);
       expect(applySpy).not.toHaveBeenCalled();
@@ -288,21 +342,21 @@ describe('$interval', function() {
   });
 
   describe('$window delegation', function() {
-    it('should use $window.setInterval instead of the global function', inject(function ($interval, $window) {
+    it('should use $window.setInterval instead of the global function', inject(function($interval, $window) {
       var setIntervalSpy = spyOn($window, 'setInterval');
 
       $interval(noop, 1000);
       expect(setIntervalSpy).toHaveBeenCalled();
     }));
 
-    it('should use $window.clearInterval instead of the global function', inject(function ($interval, $window) {
+    it('should use $window.clearInterval instead of the global function', inject(function($interval, $window) {
       var clearIntervalSpy = spyOn($window, 'clearInterval');
 
       $interval(noop, 1000, 1);
       $window.flush(1000);
       expect(clearIntervalSpy).toHaveBeenCalled();
 
-      clearIntervalSpy.reset();
+      clearIntervalSpy.calls.reset();
       $interval.cancel($interval(noop, 1000));
       expect(clearIntervalSpy).toHaveBeenCalled();
     }));

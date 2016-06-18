@@ -4,7 +4,7 @@ describe('ngSwitch', function() {
   var element;
 
 
-  afterEach(function(){
+  afterEach(function() {
     dealoc(element);
   });
 
@@ -273,7 +273,7 @@ describe('ngSwitch', function() {
       '</div>')($rootScope);
     $rootScope.$apply();
 
-    // element now contains only empty repeater. this element is dealocated by local afterEach.
+    // element now contains only empty repeater. this element is deallocated by local afterEach.
     // afterwards a global afterEach will check for leaks in jq data cache object
   }));
 
@@ -319,7 +319,7 @@ describe('ngSwitch animation', function() {
     };
   }));
 
-  afterEach(function(){
+  afterEach(function() {
     dealoc(body);
     dealoc(element);
   });
@@ -330,13 +330,13 @@ describe('ngSwitch animation', function() {
       module(function($animateProvider) {
         $animateProvider.register('.long-leave', function() {
           return {
-            leave : function(element, done) {
+            leave: function(element, done) {
               //do nothing at all
             }
           };
         });
       });
-      inject(function ($compile, $rootScope, $animate, $templateCache) {
+      inject(function($compile, $rootScope, $animate, $templateCache) {
         var item;
         var $scope = $rootScope.$new();
         element = $compile(html(

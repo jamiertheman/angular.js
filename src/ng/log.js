@@ -26,12 +26,13 @@
      <file name="index.html">
        <div ng-controller="LogController">
          <p>Reload this page with open console, enter text and hit the log button...</p>
-         Message:
-         <input type="text" ng-model="message"/>
+         <label>Message:
+         <input type="text" ng-model="message" /></label>
          <button ng-click="$log.log(message)">log</button>
          <button ng-click="$log.warn(message)">warn</button>
          <button ng-click="$log.info(message)">info</button>
          <button ng-click="$log.error(message)">error</button>
+         <button ng-click="$log.debug(message)">debug</button>
        </div>
      </file>
    </example>
@@ -43,7 +44,7 @@
  * @description
  * Use the `$logProvider` to configure how the application logs messages
  */
-function $LogProvider(){
+function $LogProvider() {
   var debug = true,
       self = this;
 
@@ -63,7 +64,7 @@ function $LogProvider(){
     }
   };
 
-  this.$get = ['$window', function($window){
+  this.$get = ['$window', function($window) {
     return {
       /**
        * @ngdoc method
@@ -108,7 +109,7 @@ function $LogProvider(){
        * @description
        * Write a debug message
        */
-      debug: (function () {
+      debug: (function() {
         var fn = consoleLog('debug');
 
         return function() {

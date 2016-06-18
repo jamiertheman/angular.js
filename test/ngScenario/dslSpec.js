@@ -56,7 +56,7 @@ describe("angular.scenario.dsl", function() {
     jqLite($window.document).empty();
   }));
 
-  afterEach(function(){
+  afterEach(function() {
     jqLite($window.document).removeData('$injector');
   });
 
@@ -282,7 +282,7 @@ describe("angular.scenario.dsl", function() {
         expect($root.futureError).toMatch(/did not match/);
       });
 
-      it('should fail to select an option that does not exist', function(){
+      it('should fail to select an option that does not exist', function() {
         doc.append(
             '<select ng-model="test">' +
             '  <option value=A>one</option>' +
@@ -624,7 +624,7 @@ describe("angular.scenario.dsl", function() {
       });
 
       it('should match bindings by substring match', function() {
-        compile('<pre ng-bind="foo.bar | filter"></pre>', 'binding value');
+        compile('<pre ng-bind="foo.bar | lowercase"></pre>', 'binding value');
         $root.dsl.binding('foo . bar');
         expect($root.futureResult).toEqual('binding value');
       });
@@ -668,22 +668,26 @@ describe("angular.scenario.dsl", function() {
     });
 
     describe('Input', function() {
-      it('should change value in text input', inject(function($compile) {
-        runs(function() {
-          element = $compile('<input ng-model="test.input" value="something">')($root);
-          doc.append(element);
-          var chain = $root.dsl.input('test.input');
-          chain.enter('foo');
-          expect(_jQuery('input[ng-model="test.input"]').val()).toEqual('foo');
+      it('should change value in text input', function(done) {
+        inject(function($compile) {
+          var job = createAsync(done);
+          job
+          .runs(function() {
+            element = $compile('<input ng-model="test.input" value="something">')($root);
+            doc.append(element);
+            var chain = $root.dsl.input('test.input');
+            chain.enter('foo');
+            expect(_jQuery('input[ng-model="test.input"]').val()).toEqual('foo');
+          })
+          // cleanup the event queue
+          .waits(0)
+          .runs(function() {
+            expect($root.test.input).toBe('foo');
+          })
+          .done();
+          job.start();
         });
-
-        // cleanup the event queue
-        waits(0);
-
-        runs(function() {
-          expect($root.test.input).toBe('foo');
-        });
-      }));
+      });
 
       it('should change value in text input in dash form', function() {
         doc.append('<input ng-model="test.input" value="something">');

@@ -1,12 +1,12 @@
 'use strict';
 
-describe('angular.scenario.matchers', function () {
+describe('angular.scenario.matchers', function() {
   var matchers;
 
   function expectMatcher(value, test) {
     delete matchers.error;
     delete matchers.future.value;
-    if (value !== undefined) {
+    if (isDefined(value)) {
       matchers.future.value = value;
     }
     test();
@@ -43,7 +43,7 @@ describe('angular.scenario.matchers', function () {
     expectMatcher(3, function() { matchers.toBeGreaterThan(-5); });
   });
 
-  it('should have toHaveClass matcher', function(){
+  it('should have toHaveClass matcher', function() {
     var e = angular.element('<div class="abc">');
     expect(e).not.toHaveClass('none');
     expect(e).toHaveClass('abc');

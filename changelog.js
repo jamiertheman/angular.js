@@ -112,7 +112,7 @@ var printSection = function(stream, title, section, printCommitLinks) {
         }
         stream.write(')\n');
       } else {
-        stream.write(util.format('%s %s', prefix, commit.subject));
+        stream.write(util.format('%s %s\n', prefix, commit.subject));
       }
     });
   });
@@ -147,8 +147,6 @@ var writeChangelog = function(stream, commits, version) {
     perf: {},
     breaks: {}
   };
-
-  sections.breaks[EMPTY_COMPONENT] = [];
 
   commits.forEach(function(commit) {
     var section = sections[commit.type];
@@ -188,6 +186,7 @@ var getPreviousTag = function() {
 
 
 var generate = function(version, file) {
+
   getPreviousTag().then(function(tag) {
     console.log('Reading git log since', tag);
     readGitLog('^fix|^feat|^perf|BREAKING', tag).then(function(commits) {
@@ -201,6 +200,7 @@ var generate = function(version, file) {
 
 // publish for testing
 exports.parseRawCommit = parseRawCommit;
+exports.printSection = printSection;
 
 // hacky start if not run by jasmine :-D
 if (process.argv.join('').indexOf('jasmine-node') === -1) {

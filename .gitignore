@@ -13,9 +13,13 @@ angular.js.tmproj
 bower_components/
 angular.xcodeproj
 .idea
+*.iml
 .agignore
 .lvimrc
 libpeerconnection.log
 npm-debug.log
 /tmp/
 /scripts/bower/bower-*
+.vscode
+*.log
+*.stackdump

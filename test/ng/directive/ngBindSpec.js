@@ -125,8 +125,8 @@ describe('ngBind*', function() {
     it('should complain about accidental use of interpolation', inject(function($compile) {
       expect(function() {
         $compile('<div ng-bind-html="{{myHtml}}"></div>');
-      }).toThrowMinErr('$parse', 'syntax', "Syntax Error: Token 'myHtml' is unexpected, " +
-          "expecting [:] at column 3 of the expression [{{myHtml}}] starting at [myHtml}}].");
+      }).toThrowMinErr('$parse', 'syntax',
+        "Syntax Error: Token '{' invalid key at column 2 of the expression [{{myHtml}}] starting at [{myHtml}}]");
     }));
 
 
@@ -140,6 +140,16 @@ describe('ngBind*', function() {
         $rootScope.html = '<div onclick="">hello</div>';
         $rootScope.$digest();
         expect(angular.lowercase(element.html())).toEqual('<div onclick="">hello</div>');
+      }));
+
+      it('should update html', inject(function($rootScope, $compile, $sce) {
+        element = $compile('<div ng-bind-html="html"></div>')($rootScope);
+        $rootScope.html = 'hello';
+        $rootScope.$digest();
+        expect(angular.lowercase(element.html())).toEqual('hello');
+        $rootScope.html = 'goodbye';
+        $rootScope.$digest();
+        expect(angular.lowercase(element.html())).toEqual('goodbye');
       }));
 
       it('should one-time bind if the expression starts with two colons', inject(function($rootScope, $compile) {
@@ -160,13 +170,13 @@ describe('ngBind*', function() {
       it('should NOT set html for untrusted values', inject(function($rootScope, $compile) {
         element = $compile('<div ng-bind-html="html"></div>')($rootScope);
         $rootScope.html = '<div onclick="">hello</div>';
-        expect($rootScope.$digest).toThrow();
+        expect(function() { $rootScope.$digest(); }).toThrow();
       }));
 
       it('should NOT set html for wrongly typed values', inject(function($rootScope, $compile, $sce) {
         element = $compile('<div ng-bind-html="html"></div>')($rootScope);
         $rootScope.html = $sce.trustAsCss('<div onclick="">hello</div>');
-        expect($rootScope.$digest).toThrow();
+        expect(function() { $rootScope.$digest(); }).toThrow();
       }));
 
       it('should set html for trusted values', inject(function($rootScope, $compile, $sce) {
@@ -176,7 +186,18 @@ describe('ngBind*', function() {
         expect(angular.lowercase(element.html())).toEqual('<div onclick="">hello</div>');
       }));
 
-      it('should watch the string value to avoid infinite recursion', inject(function($rootScope, $compile, $sce) {
+      it('should update html', inject(function($rootScope, $compile, $sce) {
+        element = $compile('<div ng-bind-html="html"></div>')($rootScope);
+        $rootScope.html = $sce.trustAsHtml('hello');
+        $rootScope.$digest();
+        expect(angular.lowercase(element.html())).toEqual('hello');
+        $rootScope.html = $sce.trustAsHtml('goodbye');
+        $rootScope.$digest();
+        expect(angular.lowercase(element.html())).toEqual('goodbye');
+      }));
+
+      it('should not cause infinite recursion for trustAsHtml object watches',
+          inject(function($rootScope, $compile, $sce) {
         // Ref: https://github.com/angular/angular.js/issues/3932
         // If the binding is a function that creates a new value on every call via trustAs, we'll
         // trigger an infinite digest if we don't take care of it.
@@ -187,6 +208,33 @@ describe('ngBind*', function() {
         $rootScope.$digest();
         expect(angular.lowercase(element.html())).toEqual('<div onclick="">hello</div>');
       }));
+
+      it('should handle custom $sce objects', function() {
+        function MySafeHtml(val) { this.val = val; }
+
+        module(function($provide) {
+          $provide.decorator('$sce', function($delegate) {
+            $delegate.trustAsHtml = function(html) { return new MySafeHtml(html); };
+            $delegate.getTrustedHtml = function(mySafeHtml) { return mySafeHtml.val; };
+            $delegate.valueOf = function(v) { return v instanceof MySafeHtml ? v.val : v; };
+            return $delegate;
+          });
+        });
+
+        inject(function($rootScope, $compile, $sce) {
+          // Ref: https://github.com/angular/angular.js/issues/14526
+          // Previous code used toString for change detection, which fails for custom objects
+          // that don't override toString.
+          element = $compile('<div ng-bind-html="getHtml()"></div>')($rootScope);
+          var html = 'hello';
+          $rootScope.getHtml = function() { return $sce.trustAsHtml(html); };
+          $rootScope.$digest();
+          expect(angular.lowercase(element.html())).toEqual('hello');
+          html = 'goodbye';
+          $rootScope.$digest();
+          expect(angular.lowercase(element.html())).toEqual('goodbye');
+        });
+      });
 
       describe('when $sanitize is available', function() {
         beforeEach(function() { module('ngSanitize'); });

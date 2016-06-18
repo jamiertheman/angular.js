@@ -18,6 +18,7 @@
     "angularModule": false,
     "nodeName_": false,
     "uid": false,
+    "toDebugString": false,
 
     "lowercase": false,
     "uppercase": false,
@@ -25,12 +26,12 @@
     "manualUppercase": false,
     "isArrayLike": false,
     "forEach": false,
-    "sortedKeys": false,
     "reverseParams": false,
     "nextUid": false,
     "setHashKey": false,
     "extend": false,
-    "int": false,
+    "merge": false,
+    "toInt": false,
     "inherit": false,
     "noop": false,
     "identity": false,
@@ -54,14 +55,13 @@
     "isPromiseLike": false,
     "makeMap": false,
     "map": false,
-    "size": false,
     "includes": false,
     "arrayRemove": false,
-    "isLeafNode": false,
     "copy": false,
     "shallowCopy": false,
     "equals": false,
     "csp": false,
+    "jq": false,
     "concat": false,
     "sliceArgs": false,
     "bind": false,
@@ -117,8 +117,7 @@
     "getBooleanAttrName": false,
     "createEventHandler": false,
     "JQLitePrototype": false,
-    "addEventListenerFn": false,
-    "removeEventListenerFn": false,
+    "jqLiteDocumentLoaded": false,
 
     /* apis.js */
     "hashKey": false,
@@ -130,9 +129,9 @@
 
     /* jasmine / karma */
     "it": false,
-    "iit": false,
+    "fit": false,
     "describe": false,
-    "ddescribe": false,
+    "fdescribe": false,
     "beforeEach": false,
     "afterEach": false,
     "expect": false,
@@ -142,6 +141,10 @@
     "waitsFor": false,
     "runs": false,
     "dump": false,
+    "they": false,
+    "fthey": false,
+    "xthey": false,
+    "assertCompareNodes": false,
 
     /* e2e */
     "browser": false,
@@ -161,7 +164,9 @@
     "provideLog": false,
     "spyOnlyCallsWithArgs": false,
     "createMockStyleSheet": false,
+    "browserSupportsCssAnimations": false,
     "browserTrigger": false,
-    "jqLiteCacheSize": false
+    "jqLiteCacheSize": false,
+    "createAsync": false
   }
 }

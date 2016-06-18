@@ -12,7 +12,7 @@ describe('ngView', function() {
   }));
 
 
-  afterEach(function(){
+  afterEach(function() {
     dealoc(element);
   });
 
@@ -56,7 +56,7 @@ describe('ngView', function() {
   });
 
 
-  it('should not instantiate the associated controller when an empty template is downloaded', function() {
+  it('should instantiate the associated controller when an empty template is downloaded', function() {
     var log = [], controllerScope,
         Ctrl = function($scope) {
           controllerScope = $scope;
@@ -73,9 +73,9 @@ describe('ngView', function() {
 
       expect(function() {
         $rootScope.$digest();
-      }).toThrowMinErr('$compile', 'tpload', 'Failed to load template: /tpl.html');
+      }).not.toThrow();
 
-      expect(controllerScope).toBeUndefined();
+      expect(controllerScope).toBeDefined();
     });
   });
 
@@ -116,6 +116,47 @@ describe('ngView', function() {
 
       expect($route.current.controller).toBe('MyCtrl');
       expect(MyCtrl).toHaveBeenCalledWith(element.children().scope());
+    });
+  });
+
+
+  it('should reference resolved locals in scope', function() {
+    module(function($routeProvider) {
+      $routeProvider.when('/foo', {
+        resolve: {
+          name: function() {
+            return 'shahar';
+          }
+        },
+        template: '<div>{{$resolve.name}}</div>'
+      });
+    });
+
+    inject(function($location, $rootScope) {
+      $location.path('/foo');
+      $rootScope.$digest();
+      expect(element.text()).toEqual('shahar');
+    });
+  });
+
+
+  it('should allow to provide an alias for resolved locals using resolveAs', function() {
+    module(function($routeProvider) {
+      $routeProvider.when('/foo', {
+        resolveAs: 'myResolve',
+        resolve: {
+          name: function() {
+            return 'shahar';
+          }
+        },
+        template: '<div>{{myResolve.name}}</div>'
+      });
+    });
+
+    inject(function($location, $rootScope) {
+      $location.path('/foo');
+      $rootScope.$digest();
+      expect(element.text()).toEqual('shahar');
     });
   });
 
@@ -501,8 +542,7 @@ describe('ngView', function() {
 
       $location.url('/foo');
       $rootScope.$digest();
-      // using toMatch because in IE8+jquery the space doesn't get preserved. jquery bug?
-      expect(element.text()).toMatch(/\s*WORKS/);
+      expect(element.text()).toEqual('   \n   WORKS');
 
       var div = element.find('div');
       expect(div.parent()[0].nodeName.toUpperCase()).toBeOneOf('NG:VIEW', 'VIEW');
@@ -528,10 +568,10 @@ describe('ngView', function() {
       $rootScope.$digest();
 
       angular.forEach(element.contents(), function(node) {
-        if(node.nodeType == 3 /* text node */) {
+        if (node.nodeType == 3 /* text node */) {
           expect(angular.element(node).scope()).not.toBe($route.current.scope);
           expect(angular.element(node).controller()).not.toBeDefined();
-        } else if(node.nodeType == 8 /* comment node */) {
+        } else if (node.nodeType == 8 /* comment node */) {
           expect(angular.element(node).scope()).toBe(element.scope());
           expect(angular.element(node).controller()).toBe(element.controller());
         } else {
@@ -673,7 +713,7 @@ describe('ngView animations', function() {
     };
   }));
 
-  afterEach(function(){
+  afterEach(function() {
     dealoc(body);
     dealoc(element);
   });
@@ -713,7 +753,6 @@ describe('ngView animations', function() {
       $location.path('/foo');
       $rootScope.$digest();
 
-      $animate.triggerCallbacks();
 
       $location.path('/');
       $rootScope.$digest();
@@ -751,7 +790,7 @@ describe('ngView animations', function() {
     );
 
     it('should render ngClass on ngView',
-      inject(function($compile, $rootScope, $templateCache, $animate, $location, $timeout) {
+      inject(function($compile, $rootScope, $templateCache, $animate, $location) {
 
         var item;
         $rootScope.tpl = 'one';
@@ -761,6 +800,7 @@ describe('ngView animations', function() {
 
         $location.path('/foo');
         $rootScope.$digest();
+        $animate.flush();
 
         //we don't care about the enter animation
         $animate.queue.shift();
@@ -777,7 +817,7 @@ describe('ngView animations', function() {
         expect($animate.queue.shift().event).toBe('addClass');
         expect($animate.queue.shift().event).toBe('removeClass');
 
-        $animate.triggerReflow();
+        $animate.flush();
 
         expect(item.hasClass('classy')).toBe(false);
         expect(item.hasClass('boring')).toBe(true);
@@ -837,6 +877,8 @@ describe('ngView animations', function() {
         expect($animate.queue.shift().event).toBe('enter'); //ngRepeat 3
         expect($animate.queue.shift().event).toBe('enter'); //ngRepeat 4
 
+        $animate.flush();
+
         expect(element.text()).toEqual('34');
 
         function n(text) {
@@ -845,18 +887,8 @@ describe('ngView animations', function() {
       });
     });
 
-    it('should destroy the previous leave animation if a new one takes place', function() {
-      module(function($provide) {
-        $provide.decorator('$animate', function($delegate, $$q) {
-          var emptyPromise = $$q.defer().promise;
-          $delegate.leave = function() {
-            return emptyPromise;
-          };
-          return $delegate;
-        });
-      });
-      inject(function ($compile, $rootScope, $animate, $location) {
-        var item;
+    it('should destroy the previous leave animation if a new one takes place',
+      inject(function($compile, $rootScope, $animate, $location, $timeout) {
         var $scope = $rootScope.$new();
         element = $compile(html(
           '<div>' +
@@ -884,12 +916,12 @@ describe('ngView animations', function() {
         $rootScope.$digest();
 
         expect(destroyed).toBe(true);
-      });
-    });
+      })
+    );
   });
 
 
-  describe('autoscroll', function () {
+  describe('autoscroll', function() {
     var autoScrollSpy;
 
     function spyOnAnchorScroll() {
@@ -905,7 +937,7 @@ describe('ngView animations', function() {
 
     function spyOnAnimateEnter() {
       return function($animate) {
-        spyOn($animate, 'enter').andCallThrough();
+        spyOn($animate, 'enter').and.callThrough();
       };
     }
 
@@ -924,9 +956,11 @@ describe('ngView animations', function() {
 
       $location.path('/foo');
       $rootScope.$digest();
-      expect($animate.queue.shift().event).toBe('enter');
-      $animate.triggerCallbacks();
 
+      $animate.flush();
+      $rootScope.$digest();
+
+      expect($animate.queue.shift().event).toBe('enter');
       expect(autoScrollSpy).toHaveBeenCalledOnce();
     }));
 
@@ -938,9 +972,11 @@ describe('ngView animations', function() {
       $rootScope.value = true;
       $location.path('/foo');
       $rootScope.$digest();
-      expect($animate.queue.shift().event).toBe('enter');
-      $animate.triggerCallbacks();
 
+      $animate.flush();
+      $rootScope.$digest();
+
+      expect($animate.queue.shift().event).toBe('enter');
       expect(autoScrollSpy).toHaveBeenCalledOnce();
     }));
 
@@ -952,7 +988,6 @@ describe('ngView animations', function() {
       $location.path('/foo');
       $rootScope.$digest();
       expect($animate.queue.shift().event).toBe('enter');
-      $animate.triggerCallbacks();
 
       expect(autoScrollSpy).not.toHaveBeenCalled();
     }));
@@ -966,7 +1001,6 @@ describe('ngView animations', function() {
       $location.path('/foo');
       $rootScope.$digest();
       expect($animate.queue.shift().event).toBe('enter');
-      $animate.triggerCallbacks();
 
       expect(autoScrollSpy).not.toHaveBeenCalled();
     }));
@@ -983,7 +1017,9 @@ describe('ngView animations', function() {
         expect(autoScrollSpy).not.toHaveBeenCalled();
 
         expect($animate.queue.shift().event).toBe('enter');
-        $animate.triggerCallbacks();
+
+        $animate.flush();
+        $rootScope.$digest();
 
         expect($animate.enter).toHaveBeenCalledOnce();
         expect(autoScrollSpy).toHaveBeenCalledOnce();

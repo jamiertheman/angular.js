@@ -5,7 +5,7 @@
 
 # What are Scopes?
 
-{@link ng.$rootScope.Scope scope} is an object that refers to the application
+{@link ng.$rootScope.Scope Scope} is an object that refers to the application
 model. It is an execution context for {@link expression expressions}. Scopes are
 arranged in hierarchical structure which mimic the DOM structure of the application. Scopes can
 watch {@link guide/expression expressions} and propagate events.
@@ -23,7 +23,7 @@ watch {@link guide/expression expressions} and propagate events.
     access to shared model properties. Nested scopes are either "child scopes" or "isolate scopes".
     A "child scope" (prototypically) inherits properties from its parent scope. An "isolate scope"
     does not. See {@link
-    guide/directive#creating-custom-directives_demo_isolating-the-scope-of-a-directive isolated
+    guide/directive#isolating-the-scope-of-a-directive isolated
     scopes} for more information.
 
   - Scopes provide context against which {@link guide/expression expressions} are evaluated. For
@@ -39,7 +39,7 @@ linking} phase the {@link ng.$compileProvider#directive directives} set up
 render the updated value to the DOM.
 
 Both controllers and directives have reference to the scope, but not to each other. This
-arrangement isolates the controller from the directive as well as from DOM. This is an important
+arrangement isolates the controller from the directive as well as from the DOM. This is an important
 point since it makes the controllers view agnostic, which greatly improves the testing story of
 the applications.
 
@@ -177,7 +177,7 @@ for example, only a portion of the view needs to be controlled by Angular.
 
 To examine the scope in the debugger:
 
-  1. right click on the element of interest in your browser and select 'inspect element'. You
+  1. Right click on the element of interest in your browser and select 'inspect element'. You
   should see the browser debugger with the element you clicked on highlighted.
 
   2. The debugger allows you to access the currently selected element in the console as `$0`
@@ -245,7 +245,7 @@ of the `$watch` expressions and compares them with the previous value. This dirt
 asynchronously. This means that assignment such as `$scope.username="angular"` will not
 immediately cause a `$watch` to be notified, instead the `$watch` notification is delayed until
 the `$digest` phase. This delay is desirable, since it coalesces multiple model updates into one
-`$watch` notification as well as it guarantees that during the `$watch` notification no other
+`$watch` notification as well as guarantees that during the `$watch` notification no other
 `$watch`es are running. If a `$watch` changes the value of the model, it will force additional
 `$digest` cycle.
 
@@ -257,14 +257,14 @@ the `$digest` phase. This delay is desirable, since it coalesces multiple model 
 
   2. **Watcher registration**
 
-     During template linking directives register {@link
+     During template linking, directives register {@link
      ng.$rootScope.Scope#$watch watches} on the scope. These watches will be
      used to propagate model values to the DOM.
 
   3. **Model mutation**
 
      For mutations to be properly observed, you should make them only within the {@link
-     ng.$rootScope.Scope#$apply scope.$apply()}. (Angular APIs do this
+     ng.$rootScope.Scope#$apply scope.$apply()}. Angular APIs do this
      implicitly, so no extra `$apply` call is needed when doing synchronous work in controllers,
      or asynchronous work with {@link ng.$http $http}, {@link ng.$timeout $timeout}
      or {@link ng.$interval $interval} services.
@@ -313,7 +313,7 @@ ng.directive:ngController ng-controller} and {@link
 ng.directive:ngRepeat ng-repeat}, create new child scopes
 and attach the child scope to the corresponding DOM element. You can retrieve a scope for any DOM
 element by using an `angular.element(aDomElement).scope()` method call.
-See the {@link guide/directive#creating-custom-directives_demo_isolating-the-scope-of-a-directive
+See the {@link guide/directive#isolating-the-scope-of-a-directive
 directives guide} for more information about isolate scopes.
 
 ### Controllers and Scopes
@@ -338,6 +338,18 @@ Dirty checking the scope for property changes is a common operation in Angular a
 the dirty checking function must be efficient. Care should be taken that the dirty checking
 function does not do any DOM access, as DOM access is orders of magnitude slower than property
 access on JavaScript object.
+
+### Scope `$watch` Depths
+<img class="pull-right" style="padding-left: 3em; padding-bottom: 1em;" src="img/guide/concepts-scope-watch-strategies.png">
+
+Dirty checking can be done with three strategies: By reference, by collection contents, and by value. The strategies differ in the kinds of changes they detect, and in their performance characteristics.
+
+   - Watching *by reference* ({@link
+      ng.$rootScope.Scope#$watch scope.$watch} `(watchExpression, listener)`) detects a change when the whole value returned by the watch expression switches to a new value. If the value is an array or an object, changes inside it are not detected. This is the most efficient strategy.
+   - Watching *collection contents* ({@link
+      ng.$rootScope.Scope#$watchCollection scope.$watchCollection} `(watchExpression, listener)`) detects changes that occur inside an array or an object: When items are added, removed, or reordered. The detection is shallow - it does not reach into nested collections. Watching collection contents is more expensive than watching by reference, because copies of the collection contents need to be maintained. However, the strategy attempts to minimize the amount of copying required.
+   - Watching *by value* ({@link
+      ng.$rootScope.Scope#$watch scope.$watch} `(watchExpression, listener, true)`) detects any change in an arbitrarily nested data structure. It is the most powerful change detection strategy, but also the most expensive. A full traversal of the nested data structure is needed on each digest, and a full copy of it needs to be held in memory.
 
 ## Integration with the browser event loop
 <img class="pull-right" style="padding-left: 3em; padding-bottom: 1em;" src="img/guide/concepts-runtime.png">
@@ -379,7 +391,7 @@ implementing custom event callbacks, or when working with third-party library ca
   5. The {@link ng.$rootScope.Scope#$watch $watch} list is a set of expressions
      which may have changed since last iteration. If a change is detected then the `$watch`
      function is called which typically updates the DOM with the new value.
-  6. Once the Angular {@link ng.$rootScope.Scope#$digest $digest} loop finishes
+  6. Once the Angular {@link ng.$rootScope.Scope#$digest $digest} loop finishes, 
      the execution leaves the Angular and JavaScript context. This is followed by the browser
      re-rendering the DOM to reflect any changes.
 
@@ -407,4 +419,4 @@ user enters text into the text field.
         which in turn updates the DOM.
      6. Angular exits the execution context, which in turn exits the `keydown` event and with it
         the JavaScript execution context.
-     7. The browser re-renders the view with update text.
+     7. The browser re-renders the view with the updated text.
